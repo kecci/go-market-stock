@@ -20,6 +20,7 @@ type (
 	iqPlusConnImpl struct {
 		conn   net.Conn
 		reader *bufio.Reader
+		fn     func()
 	}
 )
 
@@ -53,11 +54,23 @@ func NewConnection(config Config) (IqPlusConn, error) {
 
 // newIqPlusConn creates a new iqPlusConn
 func newIqPlusConn(conn net.Conn, reader *bufio.Reader) IqPlusConn {
-	return iqPlusConnImpl{conn: conn, reader: reader}
+	return &iqPlusConnImpl{conn: conn, reader: reader}
+}
+
+// Hanlder handles the connection
+func (c *iqPlusConnImpl) SetHanlder(fn func()) {
+	c.fn = fn
+}
+
+// Start starts the connection
+func (c *iqPlusConnImpl) Start() {
+	for {
+		c.fn()
+	}
 }
 
 // Close closes the connection
-func (c iqPlusConnImpl) Close() error {
+func (c *iqPlusConnImpl) Close() error {
 	return c.conn.Close()
 }
 
