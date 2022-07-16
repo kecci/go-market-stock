@@ -26,10 +26,10 @@ func main() {
 	fileScanner.Split(bufio.ScanLines)
 
 	for fileScanner.Scan() {
-
+		line := fileScanner.Text()
 		quoteArray := strings.Split(fileScanner.Text(), "|")
 
-		if len(quoteArray) > 5 && quoteArray[4] == "14" {
+		if iqplus.ReadRecord(line) == iqplus.Quote {
 
 			var stockCode, companyName, lastClose string
 
