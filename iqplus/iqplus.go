@@ -5,13 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"strconv"
 	"strings"
 )
 
 type MarketStock struct {
-	StockCode       string `json:"stock_code"`
-	CompanyName     string `json:"company_name"`
-	LastTradedPrice string `json:"last_traded_price"`
+	StockCode       string  `json:"stock_code"`
+	CompanyName     string  `json:"company_name"`
+	LastTradedPrice float64 `json:"last_traded_price"`
 }
 
 type (
@@ -89,7 +90,8 @@ func MapToMarketStock(line string) *MarketStock {
 
 	if ReadRecordType(line) == Quote {
 
-		var stockCode, companyName, lastClose string
+		var stockCode, companyName string
+		var lastTradedPrice float64
 
 		for i := range quoteArray {
 			if strings.HasPrefix(quoteArray[i], "0;") && !strings.Contains(quoteArray[i], "-") {
@@ -97,19 +99,22 @@ func MapToMarketStock(line string) *MarketStock {
 			} else if strings.HasPrefix(quoteArray[i], "1;") {
 				companyName = strings.ReplaceAll(quoteArray[i], "1;", "")
 			} else if strings.HasPrefix(quoteArray[i], "56;") {
-				lastClose = strings.ReplaceAll(quoteArray[i], "56;", "")
+				lastTradedPriceStr := strings.ReplaceAll(quoteArray[i], "56;", "")
+				lastTradedPriceFloat, err := strconv.ParseFloat(lastTradedPriceStr, 64)
+				if err != nil {
+					break
+				}
+				lastTradedPrice = lastTradedPriceFloat
 			}
 		}
-
-		if stockCode == "" {
-			return nil
+		if stockCode != "" && companyName != "" && lastTradedPrice != 0 {
+			return &MarketStock{
+				StockCode:       stockCode,
+				CompanyName:     companyName,
+				LastTradedPrice: lastTradedPrice,
+			}
 		}
-
-		return &MarketStock{
-			StockCode:       stockCode,
-			CompanyName:     companyName,
-			LastTradedPrice: lastClose,
-		}
+		return nil
 	}
 	return nil
 }

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/kecci/go-market-stock/iqplus"
@@ -31,7 +32,8 @@ func main() {
 
 		if iqplus.ReadRecordType(line) == iqplus.Quote {
 
-			var stockCode, companyName, lastClose string
+			var stockCode, companyName string
+			var lastTradedPrice float64
 
 			for i := range quoteArray {
 				if strings.HasPrefix(quoteArray[i], "0;") && !strings.Contains(quoteArray[i], "-") {
@@ -39,15 +41,19 @@ func main() {
 				} else if strings.HasPrefix(quoteArray[i], "1;") {
 					companyName = strings.ReplaceAll(quoteArray[i], "1;", "")
 				} else if strings.HasPrefix(quoteArray[i], "56;") {
-					lastClose = strings.ReplaceAll(quoteArray[i], "56;", "")
+					lastTradedPriceStr := strings.ReplaceAll(quoteArray[i], "56;", "")
+					lastTradedPrice, err = strconv.ParseFloat(lastTradedPriceStr, 64)
+					if err != nil {
+						break
+					}
 				}
 			}
 
-			if stockCode != "" && companyName != "" && lastClose != "" {
+			if stockCode != "" && companyName != "" && lastTradedPrice != 0 {
 				stockMap[stockCode] = iqplus.MarketStock{
 					StockCode:       stockCode,
 					CompanyName:     companyName,
-					LastTradedPrice: lastClose,
+					LastTradedPrice: lastTradedPrice,
 				}
 			}
 		}
