@@ -33,9 +33,9 @@ func (r RecordType) String() string {
 	return string(r)
 }
 
-// ReadRecord checks if the record type is valid
+// ReadRecordType checks if the record type is valid
 // IQP | Date | Time | Sequence # | Record Type | Data | CR/LF
-func ReadRecord(line string) RecordType {
+func ReadRecordType(line string) RecordType {
 	lineArray := strings.Split(line, "|")
 	if len(lineArray) < 6 {
 		return ""

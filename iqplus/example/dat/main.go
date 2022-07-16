@@ -29,7 +29,7 @@ func main() {
 		line := fileScanner.Text()
 		quoteArray := strings.Split(fileScanner.Text(), "|")
 
-		if iqplus.ReadRecord(line) == iqplus.Quote {
+		if iqplus.ReadRecordType(line) == iqplus.Quote {
 
 			var stockCode, companyName, lastClose string
 

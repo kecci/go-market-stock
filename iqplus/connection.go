@@ -11,9 +11,9 @@ import (
 type (
 	IqPlusConn interface {
 		Close() error
+		CheckCon(line string) error
 		ReadLine() (string, error)
 		ReadRecord() (RecordType, error)
-		CheckCon(line string) error
 		GetTradingStatus(string) (string, error)
 	}
 
@@ -61,6 +61,17 @@ func (c iqPlusConnImpl) Close() error {
 	return c.conn.Close()
 }
 
+// CheckCon indicate whether the communication with the IQPlus central server is disconnected or not.
+// IQP|20211222|072222|1|13|0[CR/LF]
+// Data 0 = 'UP' atau 1='DOWN'
+func (c iqPlusConnImpl) CheckCon(line string) error {
+	lineArray := strings.Split(line, "|")
+	if ReadRecordType(line) == ControlMessages && lineArray[5] != "0" {
+		return errors.New("central server is disconnected")
+	}
+	return nil
+}
+
 // ReadLine returns a line
 func (c iqPlusConnImpl) ReadLine() (string, error) {
 	line, err := c.reader.ReadString('\n')
@@ -76,18 +87,7 @@ func (c iqPlusConnImpl) ReadRecord() (RecordType, error) {
 	if err != nil {
 		return "", err
 	}
-	return ReadRecord(line), nil
-}
-
-// CheckCon indicate whether the communication with the IQPlus central server is disconnected or not.
-// IQP|20211222|072222|1|13|0[CR/LF]
-// Data 0 = 'UP' atau 1='DOWN'
-func (c iqPlusConnImpl) CheckCon(line string) error {
-	lineArray := strings.Split(line, "|")
-	if ReadRecord(line) == ControlMessages && lineArray[5] != "0" {
-		return errors.New("central server is disconnected")
-	}
-	return nil
+	return ReadRecordType(line), nil
 }
 
 // GetTradingStatus returns the trading status

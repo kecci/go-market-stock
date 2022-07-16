@@ -87,7 +87,7 @@ func isChangePasswordSuccess(reader *bufio.Reader) error {
 func MapToMarketStock(line string) *MarketStock {
 	quoteArray := strings.Split(line, "|")
 
-	if ReadRecord(line) == Quote {
+	if ReadRecordType(line) == Quote {
 
 		var stockCode, companyName, lastClose string
 
