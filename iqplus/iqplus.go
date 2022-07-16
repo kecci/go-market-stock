@@ -18,41 +18,22 @@ type (
 	Config struct {
 		ServerHost, ServerPort, Username, Password string
 	}
-
-	IqPlusConn interface {
-		Close() error
-		ReadLine() (string, error)
-	}
-
-	iqPlusConnImpl struct {
-		conn   net.Conn
-		reader *bufio.Reader
-	}
 )
 
-// Close closes the connection
-func (c iqPlusConnImpl) Close() error {
-	return c.conn.Close()
-}
-
-// ReadLine returns a line
-func (c iqPlusConnImpl) ReadLine() (string, error) {
-	return c.reader.ReadString('\n')
-}
-
-// Connect returns a connection and a reader
-func NewConnection(config Config) (IqPlusConn, error) {
+// ChangePassword changes the password
+func ChangePassword(newPassword string, config Config) error {
 	// Connect
 	conn, err := net.Dial("tcp", net.JoinHostPort(config.ServerHost, config.ServerPort))
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	// Login
-	msg := fmt.Sprintf("IQP|149|0|1|%s|%s\r\n", config.Username, config.Password)
+	// Change Password Request
+	// IQP|auth_record_type|sub type|encryption_method|user|new password|old password
+	msg := fmt.Sprintf("IQP|149|1|1|%s|%s|%s\r\n", config.Username, newPassword, config.Password)
 	_, err = conn.Write([]byte(msg))
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Reader
@@ -60,12 +41,12 @@ func NewConnection(config Config) (IqPlusConn, error) {
 	reader.ReadLine()
 
 	// Login Check
-	err = isLogin(reader)
+	err = isChangePasswordSuccess(reader)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return iqPlusConnImpl{conn: conn, reader: reader}, nil
+	return nil
 }
 
 // isLogin checks if the login is successful
@@ -76,9 +57,29 @@ func isLogin(reader *bufio.Reader) error {
 	}
 	line := string(lineByte)[1:]
 
+	// IQP|149|0|0|OK[CR/LF]
 	if !strings.Contains(line, "IQP|149|0|0|") {
 		return errors.New(line)
 	}
+
+	println(line)
+	return nil
+}
+
+// isLogin checks if the login is successful
+func isChangePasswordSuccess(reader *bufio.Reader) error {
+	lineByte, _, err := reader.ReadLine()
+	if err != nil {
+		return err
+	}
+	line := string(lineByte)[1:]
+
+	// IQP|149|1|0|OK[CR/LF]
+	if !strings.Contains(line, "IQP|149|1|0|") {
+		return errors.New(line)
+	}
+
+	println(line)
 	return nil
 }
 
@@ -86,7 +87,7 @@ func isLogin(reader *bufio.Reader) error {
 func MapToMarketStock(line string) *MarketStock {
 	quoteArray := strings.Split(line, "|")
 
-	if len(quoteArray) > 5 && quoteArray[4] == "14" {
+	if ReadRecord(line) == Quote {
 
 		var stockCode, companyName, lastClose string
 

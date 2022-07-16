@@ -19,6 +19,8 @@ func main() {
 	}
 	defer conn.Close()
 
+	println("connected, waiting for data...")
+
 	// Read Line
 	for {
 		line, err := conn.ReadLine()
@@ -26,7 +28,11 @@ func main() {
 			println(err.Error())
 			break
 		}
-		println(line)
+		err = conn.CheckCon(line)
+		if err != nil {
+			println(err.Error())
+			break
+		}
 	}
 
 	println("iqplus terminated")
