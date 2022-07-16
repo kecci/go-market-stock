@@ -12,6 +12,7 @@ type (
 	IqPlusConn interface {
 		Close() error
 		SetHanlder(fn func())
+		Start()
 		CheckCon(line string) error
 		ReadLine() (string, error)
 		ReadRecord() (RecordType, error)
