@@ -1,6 +1,8 @@
 package main
 
-import "github.com/kecci/go-market-stock/iqplus"
+import (
+	"github.com/kecci/go-market-stock/iqplus"
+)
 
 func main() {
 	// Config
@@ -15,25 +17,27 @@ func main() {
 	conn, err := iqplus.NewConnection(cfg)
 	if err != nil {
 		println(err.Error())
-		return
 	}
 	defer conn.Close()
 
-	println("connected, waiting for data...")
-
-	// Read Line
-	for {
+	conn.SetHanlder(func() error {
 		line, err := conn.ReadLine()
 		if err != nil {
 			println(err.Error())
-			break
+			return err
 		}
 		err = conn.CheckCon(line)
 		if err != nil {
 			println(err.Error())
-			break
+			return err
 		}
-	}
+		println(line)
+		return nil
+	})
+
+	println("connected, waiting for data...")
+
+	conn.Start()
 
 	println("iqplus terminated")
 }

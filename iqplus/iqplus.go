@@ -52,19 +52,22 @@ func ChangePassword(newPassword string, config Config) error {
 
 // isLogin checks if the login is successful
 func isLogin(reader *bufio.Reader) error {
-	lineByte, _, err := reader.ReadLine()
-	if err != nil {
-		return err
-	}
-	line := string(lineByte)[1:]
 
-	// IQP|149|0|0|OK[CR/LF]
-	if !strings.Contains(line, "IQP|149|0|0|") {
-		return errors.New(line)
-	}
+	for {
+		lineByte, _, err := reader.ReadLine()
+		if err != nil {
+			return err
+		}
+		line := string(lineByte)[1:]
 
-	println(line)
-	return nil
+		// IQP|149|0|0|OK[CR/LF]
+		if strings.Contains(line, "IQP|149|0|") {
+			if strings.Contains(line, "OK") {
+				return nil
+			}
+			return errors.New(line)
+		}
+	}
 }
 
 // isLogin checks if the login is successful

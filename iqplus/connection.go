@@ -11,7 +11,7 @@ import (
 type (
 	IqPlusConn interface {
 		Close() error
-		SetHanlder(fn func())
+		SetHanlder(fn func() error)
 		Start()
 		CheckCon(line string) error
 		ReadLine() (string, error)
@@ -22,7 +22,7 @@ type (
 	iqPlusConnImpl struct {
 		conn   net.Conn
 		reader *bufio.Reader
-		fn     func()
+		fn     func() error
 	}
 )
 
@@ -31,14 +31,16 @@ func NewConnection(config Config) (IqPlusConn, error) {
 	// Connect
 	conn, err := net.Dial("tcp", net.JoinHostPort(config.ServerHost, config.ServerPort))
 	if err != nil {
-		return nil, err
+		println("failed dial server", err.Error())
+		return newIqPlusConn(conn, nil), err
 	}
 
 	// Login
 	msg := fmt.Sprintf("IQP|149|0|1|%s|%s\r\n", config.Username, config.Password)
 	_, err = conn.Write([]byte(msg))
 	if err != nil {
-		return nil, err
+		println("failed send login", err.Error())
+		return newIqPlusConn(conn, nil), err
 	}
 
 	// Reader
@@ -48,7 +50,8 @@ func NewConnection(config Config) (IqPlusConn, error) {
 	// Login Check
 	err = isLogin(reader)
 	if err != nil {
-		return nil, err
+		println(err.Error())
+		return newIqPlusConn(conn, reader), err
 	}
 
 	return newIqPlusConn(conn, reader), nil
@@ -60,19 +63,33 @@ func newIqPlusConn(conn net.Conn, reader *bufio.Reader) IqPlusConn {
 }
 
 // Hanlder handles the connection
-func (c *iqPlusConnImpl) SetHanlder(fn func()) {
+func (c *iqPlusConnImpl) SetHanlder(fn func() error) {
+	if c.conn == nil && c.reader == nil {
+		return
+	}
 	c.fn = fn
 }
 
 // Start starts the connection
 func (c *iqPlusConnImpl) Start() {
+	if c.conn == nil && c.reader == nil {
+		return
+	}
+	if c.fn == nil {
+		return
+	}
 	for {
-		c.fn()
+		if c.fn() != nil {
+			return
+		}
 	}
 }
 
 // Close closes the connection
 func (c *iqPlusConnImpl) Close() error {
+	if c.conn == nil {
+		return nil
+	}
 	return c.conn.Close()
 }
 
